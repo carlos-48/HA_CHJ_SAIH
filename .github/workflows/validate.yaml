@@ -28,15 +28,5 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11' # Or the version HA core uses
-      - name: Install hassfest
-        run: pip install hassfest # This might need adjustment based on how hassfest is distributed for standalone use
-      - name: Run hassfest
-        run: python -m script.hassfest --action root # Command might vary
-        # If direct hassfest is tricky, we might use a pre-built action like home-assistant/actions/hassfest@master
-        # For now, let's try the direct approach and adjust if needed.
-        # Fallback to home-assistant/actions/hassfest if the above is problematic:
-        # uses: home-assistant/actions/hassfest@master
+      - name: Hassfest Action
+        uses: home-assistant/actions/hassfest@master
