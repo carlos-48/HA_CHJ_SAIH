@@ -1,6 +1,6 @@
 {
   "domain": "chj_saih",
-  "name": "CHJ SAIH",
+  "name": "%integration_name%",
   "documentation": "https://github.com/carlos-48/ha-chj-saih",
   "issue_tracker": "https://github.com/carlos-48/ha-chj-saih/issues",
   "codeowners": ["@carlos-48"],

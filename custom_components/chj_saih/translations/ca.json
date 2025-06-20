@@ -1,0 +1,29 @@
+{
+  "integration_name": "CHJ SAIH",
+  "config": {
+    "title": "CHJ SAIH",
+    "step": {
+      "user": {
+        "title": "Configuració de CHJ SAIH",
+        "description": "Seguiu aquests passos per configurar la integració CHJ SAIH.",
+        "data": {
+          "scan_interval": "Interval d'actualització (minuts)"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Ja existeix una instància de CHJ SAIH configurada. Només es permet una instància."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcions de CHJ SAIH",
+        "description": "Modifiqueu l'interval d'actualització per a la integració CHJ SAIH.",
+        "data": {
+          "scan_interval": "Interval d'actualització (minuts)"
+        }
+      }
+    }
+  }
+}
