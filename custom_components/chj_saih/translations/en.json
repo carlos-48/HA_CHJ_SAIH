@@ -1,0 +1,29 @@
+{
+  "integration_name": "CHJ SAIH",
+  "config": {
+    "title": "CHJ SAIH",
+    "step": {
+      "user": {
+        "title": "CHJ SAIH Configuration",
+        "description": "Follow these steps to set up the CHJ SAIH integration.",
+        "data": {
+          "scan_interval": "Update interval (minutes)"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "An instance of CHJ SAIH is already configured. Only one instance is allowed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "CHJ SAIH Options",
+        "description": "Modify the update interval for the CHJ SAIH integration.",
+        "data": {
+          "scan_interval": "Update interval (minutes)"
+        }
+      }
+    }
+  }
+}
