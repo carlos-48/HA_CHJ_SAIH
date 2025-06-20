@@ -1,0 +1,70 @@
+{
+    "config": {
+        "title": "CHJ SAIH",
+        "step": {
+            "user": {
+                "title": "CHJ SAIH Configuration Method",
+                "description": "Choose how you want to configure CHJ SAIH stations.",
+                "data": {
+                    "config_type": "Configuration Type"
+                }
+            },
+            "single_station": {
+                "title": "Configure Single Station",
+                "description": "Enter the ID of the single station you want to monitor.",
+                "data": {
+                    "station_id_input": "Station ID"
+                }
+            },
+            "radius_search": {
+                "title": "Configure Stations by Radius",
+                "description": "Define a center point, radius, and sensor types to find stations.",
+                "data": {
+                    "location": "Center Location",
+                    "radius": "Radius (km)",
+                    "sensor_types_input": "Sensor Types"
+                }
+            },
+            "configure_global": {
+                "title": "Global Settings",
+                "description": "Configure global settings for the CHJ SAIH integration.",
+                "data": {
+                    "scan_interval": "Scan Interval (seconds)"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Failed to connect to the CHJ SAIH API.",
+            "invalid_auth": "Invalid authentication credentials for CHJ SAIH API (if applicable).",
+            "no_stations_found": "No stations found for the given criteria.",
+            "no_stations_found_data": "No station IDs found in the returned data.",
+            "radius_search_api_error": "API error during radius search. Check logs.",
+            "missing_station_id": "Station ID is missing from configuration.",
+            "unknown_config_type": "Unknown configuration type selected.",
+            "unknown_error_radius": "An unknown error occurred during radius search. Check logs.",
+            "single_instance_allowed": "Only a single configuration of CHJ SAIH is allowed."
+        },
+        "abort": {
+            "single_instance_allowed": "An instance of CHJ SAIH is already configured. Multiple instances are not supported."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "CHJ SAIH Options",
+                "description": "Update global settings for the CHJ SAIH integration.",
+                "data": {
+                    "scan_interval": "Scan Interval (seconds)"
+                }
+            }
+        }
+    },
+    "selector": {
+        "config_type": {
+            "options": {
+                "single": "Single Station",
+                "radius": "Stations by Radius"
+            }
+        }
+    }
+}
