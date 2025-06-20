@@ -13,12 +13,15 @@ from .const import (
     CONF_CONFIG_TYPE,
     CONF_STATION_ID_INPUT,
     CONF_LATITUDE,
-    CONF_LONGITUDE,
+    CONF_LONGITUDE, # Will be indirectly used via CONF_LOCATION in future steps
     CONF_RADIUS,
     CONF_SENSOR_TYPES_INPUT,
     SENSOR_TYPES_OPTIONS,
     CONF_STATIONS,
+    CONF_LOCATION, # New constant for location selector
 )
+from homeassistant.helpers import selector # For location selector
+
 
 # Assuming APIClient and SaihError are structured like this in the library
 # If the library is part of the integration (e.g. in a `pychj_saih` subfolder),
@@ -107,27 +110,40 @@ class ChjSaihConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not hasattr(self, 'init_data'):
                 self.init_data = {} # Should ideally not happen if flow starts from user step
 
-            self.init_data[CONF_LATITUDE] = user_input[CONF_LATITUDE]
-            self.init_data[CONF_LONGITUDE] = user_input[CONF_LONGITUDE]
-            self.init_data[CONF_RADIUS] = user_input[CONF_RADIUS]
+            # Clear old lat/lon if they existed from a previous version or different logic
+            self.init_data.pop(CONF_LATITUDE, None)
+            self.init_data.pop(CONF_LONGITUDE, None)
+
+            self.init_data[CONF_LOCATION] = user_input[CONF_LOCATION]
+            self.init_data[CONF_RADIUS] = user_input[CONF_RADIUS] # RADIUS is optional, so might not be in user_input if not changed from default
             self.init_data[CONF_SENSOR_TYPES_INPUT] = user_input[CONF_SENSOR_TYPES_INPUT]
-            # No validation for now, proceed to next step
+
+            # The temporary lines for CONF_LATITUDE and CONF_LONGITUDE direct assignment are now removed.
+            # async_step_configure_global will now read from CONF_LOCATION directly.
+
             return await self.async_step_configure_global()
 
         # Show form to get radius search parameters
+        data_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_LOCATION,
+                    default={ # Default to HA's configured home location
+                        "latitude": self.hass.config.latitude,
+                        "longitude": self.hass.config.longitude,
+                    }
+                ): selector.selector({"location": {}}), # Location selector
+                vol.Optional(
+                    CONF_RADIUS,
+                    default=50 # Default radius 50km
+                ): cv.positive_float,
+                vol.Required(CONF_SENSOR_TYPES_INPUT): cv.multi_select(
+                    SENSOR_TYPES_OPTIONS
+                ),
+            }
+        )
         return self.async_show_form(
-            step_id="radius_search",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_LATITUDE): cv.latitude,
-                    vol.Required(CONF_LONGITUDE): cv.longitude,
-                    vol.Required(CONF_RADIUS): cv.positive_float,
-                    vol.Required(CONF_SENSOR_TYPES_INPUT): cv.multi_select(
-                        SENSOR_TYPES_OPTIONS
-                    ),
-                }
-            ),
-            errors=errors,
+            step_id="radius_search", data_schema=data_schema, errors=errors
         )
 
     async def async_step_configure_global(self, user_input=None):
@@ -146,8 +162,9 @@ class ChjSaihConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if config_type == "radius":
                 try:
-                    lat = self.init_data[CONF_LATITUDE]
-                    lon = self.init_data[CONF_LONGITUDE]
+                    location_data = self.init_data[CONF_LOCATION]
+                    lat = location_data['latitude']
+                    lon = location_data['longitude']
                     radius = self.init_data[CONF_RADIUS]
                     sensor_types = self.init_data[CONF_SENSOR_TYPES_INPUT]
 
