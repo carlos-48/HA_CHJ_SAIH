@@ -173,8 +173,8 @@ class ChjSaihConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     client = APIClient()
 
                     LOGGER.debug(
-                        "Fetching stations by radius: lat=%s, lon=%s, radius=%s, types=%s",
-                        lat, lon, radius, sensor_types
+                        "Fetching stations by radius: radius=%s, types=%s",
+                        radius, sensor_types
                     )
                     # Assuming get_stations_by_radius is a blocking call
                     stations_data = await self.hass.async_add_executor_job(
