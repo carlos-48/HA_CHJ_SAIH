@@ -1,4 +1,9 @@
 {
-  "name": "CHJ SAHI",
-  "render_readme": true
+  "name": "CHJ SAIH Integration",
+  "homeassistant": "2023.1.0",
+  "domains": ["sensor"],
+  "render_readme": true,
+  "iot_class": "cloud_polling",
+  "country": ["ES"],
+  "persistent_directory": "chj_saih_data"
 }
