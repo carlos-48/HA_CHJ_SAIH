@@ -1,0 +1,30 @@
+name: Lint Code
+
+on:
+  push:
+    branches: [main] # Or your default branch
+  pull_request:
+    branches: [main] # Or your default branch
+
+permissions:
+  contents: read # Required to check out the code
+  # Add other permissions if the action requires them, e.g., for annotations
+
+jobs:
+  ruff:
+    name: Ruff Linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # Or your target Python version
+      - name: Run Ruff
+        uses: chartboost/ruff-action@v1
+        # Alternatively, can install ruff via pip and run it directly:
+        # run: |
+        #   pip install ruff
+        #   ruff check .
+        # Using an action like chartboost/ruff-action is often more convenient.

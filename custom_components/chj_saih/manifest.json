@@ -1,0 +1,10 @@
+{
+  "domain": "chj_saih",
+  "name": "CHJ SAIH",
+  "documentation": "https://github.com/carlos-48/ha-chj-saih",
+  "issue_tracker": "https://github.com/carlos-48/ha-chj-saih/issues",
+  "codeowners": ["@carlos-48"],
+  "requirements": ["chj-saih==0.2.2"],
+  "iot_class": "cloud_polling",
+  "version": "0.1.0"
+}

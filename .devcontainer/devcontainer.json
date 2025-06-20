@@ -1,0 +1,44 @@
+{
+  "name": "Home Assistant Integration Dev Container",
+  "image": "ghcr.io/home-assistant/devcontainer:stable",
+  "portsAttributes": {
+    "8123": {
+      "label": "Home Assistant",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "forwardPorts": [8123],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "esbenp.prettier-vscode" // For YAML, JSON, MD files
+      ],
+      "settings": {
+        "python.pythonPath": "/usr/local/bin/python",
+        "python.analysis.autoSearchPaths": false, // Disable to avoid conflicts with HA venv
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false, // Prefer Ruff
+        "python.formatting.provider": "none", // Prefer Ruff for formatting via editor actions or save
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        },
+        "ruff.path": ["/usr/local/bin/ruff"],
+        "ruff.lint.args": [],
+        "files.eol": "\n",
+        "files.trimTrailingWhitespace": true,
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+      }
+    }
+  },
+  "postCreateCommand": "echo 'Devcontainer created. Run `python -m script.scaffold config_flow_oauth2` if needed.'",
+  "remoteUser": "vscode"
+}
