@@ -34,9 +34,8 @@ You will be asked to choose a configuration method:
 
 **Option 2: Stations by Radius**
 *   Select "Stations by Radius".
-*   **Latitude**: The latitude of the center point for your search.
-*   **Longitude**: The longitude of the center point for your search.
-*   **Radius (km)**: The radius in kilometers around the central point to search for stations.
+*   **Location**: Use the interactive map to select the center point for your search. By default, this will be your Home Assistant instance's configured home location.
+*   **Radius (km)**: The radius in kilometers around the central point to search for stations. Defaults to `50` km.
 *   **Sensor Types**: Select one or more sensor types to include. Available types:
     *   RainGauge
     *   Flow
