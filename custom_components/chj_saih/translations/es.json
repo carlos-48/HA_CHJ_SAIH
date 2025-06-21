@@ -1,7 +1,6 @@
 {
-  "integration_name": "CHJ SAIH",
+  "title": "CHJ SAIH",
   "config": {
-    "title": "CHJ SAIH",
     "step": {
       "user": {
         "title": "Configuración de CHJ SAIH",
