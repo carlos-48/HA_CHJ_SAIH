@@ -1,66 +1,83 @@
-"""The CHJ SAIH Integration."""
-# Home Assistant core & const
-from homeassistant.config_entries import ConfigEntry
-# from homeassistant.const import CONF_SCAN_INTERVAL # Not directly used by __init__.py logic
-from homeassistant.core import HomeAssistant
+"""The CHJ SAIH integration."""
+from __future__ import annotations
 
-# Local
+from datetime import timedelta # Added
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_SCAN_INTERVAL
+from homeassistant.core import HomeAssistant
+# ConfigEntryNotReady might be needed if we want to raise it explicitly
+# from homeassistant.exceptions import ConfigEntryNotReady
+
 from .const import (
     DOMAIN,
-    LOGGER,
     PLATFORMS,
-    # CONF_STATIONS, # Not directly used by logic in __init__.py, but part of data structure
-    # Other CONF_ constants are part of entry.data, not directly used by __init__.py
+    CONF_STATIONS,
+    LOGGER,
+    # CF_SCAN_INTERVAL_LISTENER, # No longer needed here
 )
+from .coordinator import ChjSaihDataUpdateCoordinator # Added
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up CHJ SAIH from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
-    # Store a copy of the entry data in hass.data for access by platforms.
-    # This includes all configuration keys like CONF_STATIONS, CONF_SCAN_INTERVAL, etc.,
-    # as defined in the config flow and stored in entry.data.
-    hass.data[DOMAIN][entry.entry_id] = dict(entry.data)
-
-    LOGGER.debug(
-        "Setting up entry %s with data: %s", entry.entry_id, entry.data
+    station_ids = entry.data[CONF_STATIONS]
+    scan_interval = entry.options.get(
+        CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL)
     )
 
-    # Register update listener for options flow
-    entry.add_update_listener(async_update_options)
+    LOGGER.info(
+        "Setting up CHJ SAIH integration for stations %s with scan interval %s seconds",
+        station_ids,
+        scan_interval,
+    )
 
-    # Forward the setup to platforms. PLATFORMS is defined in const.py.
+    coordinator = ChjSaihDataUpdateCoordinator(
+        hass,
+        station_ids=station_ids,
+        update_interval=timedelta(seconds=scan_interval),
+    )
+
+    await coordinator.async_config_entry_first_refresh()
+    # If async_config_entry_first_refresh raises UpdateFailed (which it does on errors),
+    # Home Assistant will retry the setup later. ConfigEntryNotReady can also be raised here.
+
+    hass.data[DOMAIN][entry.entry_id] = {
+        CONF_STATIONS: station_ids, # May be removed if sensors get it from coordinator/entry
+        CONF_SCAN_INTERVAL: scan_interval, # May be removed if sensors get it from coordinator/entry
+        "coordinator": coordinator,
+    }
+
+    # Set up listener for options changes, automatically cleaned up on unload
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
+    # Forward the setup to platforms.
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    LOGGER.debug("CHJ SAIH integration setup complete for entry %s", entry.entry_id)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    LOGGER.debug("Unloading entry %s", entry.entry_id)
+    LOGGER.info("Unloading CHJ SAIH integration for entry %s", entry.entry_id)
 
-    # Forward the unloading of the entry to platforms.
-    unload_ok = await hass.config_entries.async_forward_entry_unloads(entry, PLATFORMS)
+    # Unload platforms.
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+    # Listener is automatically removed by entry.async_on_unload
 
     if unload_ok:
-        # Clean up hass.data
         hass.data[DOMAIN].pop(entry.entry_id)
-        LOGGER.info("Successfully unloaded entry %s", entry.entry_id)
-        if not hass.data[DOMAIN]: # If no more entries for this domain
-            hass.data.pop(DOMAIN) # Clean up the domain from hass.data
+        LOGGER.debug("CHJ SAIH integration successfully unloaded for entry %s", entry.entry_id)
 
     return unload_ok
 
 
-async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Handle options update by reloading the entry."""
-    LOGGER.debug("Configuration options updated for %s, reloading entry.", entry.entry_id)
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle an options update."""
+    LOGGER.debug("Reloading CHJ SAIH integration for entry %s due to options update", entry.entry_id)
     await hass.config_entries.async_reload(entry.entry_id)
-
-# Example for future:
-# async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
-#    """Migrate old entry."""
-#    LOGGER.debug("Migrating from version %s", config_entry.version)
-#    # Migration logic here
-#    return True
+    # async_unload_entry and async_setup_entry will be called automatically by HA

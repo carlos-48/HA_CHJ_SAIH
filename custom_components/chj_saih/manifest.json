@@ -1,10 +1,10 @@
 {
   "domain": "chj_saih",
-  "name": "%integration_name%",
-  "codeowners": ["@carlos-48"],
+  "name": "CHJ SAIH",
   "documentation": "https://github.com/carlos-48/ha-chj-saih",
-  "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/carlos-48/ha-chj-saih/issues",
+  "codeowners": ["@carlos-48"],
   "requirements": ["chj-saih==0.2.2"],
-  "version": "0.1.1"
+  "iot_class": "cloud_polling",
+  "version": "0.1.0"
 }

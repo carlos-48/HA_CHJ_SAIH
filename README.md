@@ -1,69 +1,71 @@
 # CHJ SAIH Integration for Home Assistant
 
-Integrates data from CHJ SAIH (Sistema Automático de Información Hidrológica de la Confederación Hidrográfica del Júcar) into Home Assistant.
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/hacs/integration) <!-- Assuming it will be a default HACS repo -->
+
+The CHJ SAIH integration allows you to monitor hydrological data from the Júcar River Hydrographic Confederation (Confederación Hidrográfica del Júcar - CHJ) SAIH (Sistema Automático de Información Hidrológica) network directly in Home Assistant.
 
 ## Features
 
-*   Fetches data for hydrological observation stations.
-*   Configurable via Home Assistant UI.
-*   Two methods for selecting stations:
-    *   Add a single, specific station by its ID.
-    *   Add all stations of selected types within a specified radius from a central point.
-*   Configurable update interval for fetching data.
+*   Fetches real-time sensor data from specified CHJ SAIH monitoring points (variables).
+*   Exposes data as sensor entities in Home Assistant.
+*   Configurable update interval.
+*   (More features to be added as developed)
 
-## Requirements
+## Prerequisites
 
-*   Home Assistant
-*   The `chj-saih` Python library (version 0.2.2 or as specified in `manifest.json`). This will be installed automatically by Home Assistant.
+*   Home Assistant installation.
+*   [HACS (Home Assistant Community Store)](https://hacs.xyz/) installed and operational.
+
+## Installation
+
+### Via HACS (Recommended)
+
+1.  Ensure HACS is installed.
+2.  Go to HACS > Integrations.
+3.  Click on the 3 dots in the top right corner and select "Custom repositories".
+4.  Enter `https://github.com/carlos-48/ha-chj-saih` (replace with your actual repository URL if different) in the "Repository" field.
+5.  Select "Integration" as the category.
+6.  Click "Add".
+7.  Find the "CHJ SAIH" integration in the HACS store and click "Install".
+8.  Restart Home Assistant.
+
+### Manual Installation
+
+1.  Download the latest release from the [Releases page](https://github.com/carlos-48/ha-chj-saih/releases) (replace with your actual repository URL).
+2.  Copy the `custom_components/chj_saih` directory into your Home Assistant `custom_components` directory.
+3.  Restart Home Assistant.
 
 ## Configuration
 
-1.  Ensure you have the CHJ SAIH custom integration files in your `<config_dir>/custom_components/chj_saih/` directory.
-2.  Restart Home Assistant.
-3.  Go to **Settings > Devices & Services**.
-4.  Click **+ ADD INTEGRATION** and search for "CHJ SAIH".
-5.  The configuration flow will start.
+After installation, the CHJ SAIH integration can be configured through the Home Assistant user interface:
 
-### Configuration Steps
+1.  Go to **Settings** > **Devices & Services**.
+2.  Click the **+ ADD INTEGRATION** button.
+3.  Search for "CHJ SAIH" and select it.
+4.  Follow the on-screen instructions:
+    *   **Station IDs (comma-separated)**: Enter the `variable` IDs from the CHJ SAIH system for the monitoring points you want to track. You can usually find these IDs by exploring the CHJ SAIH public website. Each ID represents a specific metric (e.g., river level, flow rate) at a specific location.
+    *   **Scan Interval (seconds)**: (Optional) How often to fetch new data. Defaults to 1800 seconds (30 minutes).
+5.  Click **Submit**.
 
-You will be asked to choose a configuration method:
+The integration will then attempt to connect to the CHJ SAIH service and create sensor entities for the configured station IDs.
 
-**Option 1: Single Station**
-*   Select "Single Station".
-*   **Station ID**: Enter the unique identifier for the station you want to monitor.
+## Entities
 
-**Option 2: Stations by Radius**
-*   Select "Stations by Radius".
-*   **Location**: Use the interactive map to select the center point for your search. By default, this will be your Home Assistant instance's configured home location.
-*   **Radius (km)**: The radius in kilometers around the central point to search for stations. Defaults to `50` km.
-*   **Sensor Types**: Select one or more sensor types to include. Available types:
-    *   RainGauge
-    *   Flow
-    *   Reservoir
-    *   Temperature
+This integration primarily creates `sensor` entities. Each configured Station ID (variable) will typically result in one sensor entity.
 
-**Global Settings**
-After providing the station-specific configuration, you will be asked for:
-*   **Scan Interval (seconds)**: How often to fetch new data from the CHJ SAIH service. Default is 1800 seconds (30 minutes).
+*   **Sensor Name**: Derived from the description provided by the CHJ SAIH API (e.g., "Caudal rambla Gallinera").
+*   **State**: The current value of the monitored metric.
+*   **Attributes**:
+    *   `last_update`: Timestamp of the last reading.
+    *   `station_id`: The CHJ SAIH `variable` ID.
+    *   `station_name`: Name of the physical station, if available from the API.
+    *   `river_name`: Name of the river, if available from the API.
+    *   Other metadata provided by the API.
 
-## Provided Entities
+## Contributing
 
-Once configured, the integration will create sensor entities in Home Assistant for each selected/found station.
+Contributions are welcome! If you have ideas, bug reports, or want to contribute code, please open an issue or submit a pull request on the [GitHub repository](https://github.com/carlos-48/ha-chj-saih).
 
-*   **Sensor Naming**: Sensors will typically be named based on the station ID or name provided by the API (e.g., "CHJ SAIH {station_id}" or "Station Name").
-*   **State**: The primary state of the sensor will attempt to represent a key measurement or status (e.g., last update timestamp, "Online"). This is dependent on the data provided by the CHJ SAIH API for each station.
-*   **Attributes**: Additional data fetched for the station will be available as attributes on the sensor. This can include:
-    *   Station ID
-    *   River name (if applicable)
-    *   Last update timestamp from the source
-    *   Specific measurements (e.g., flow rate, water level, temperature readings) depending on the station type and available data.
+## License
 
-## Troubleshooting
-
-*   If you encounter issues, check the Home Assistant logs (Settings > System > Logs) for messages from the `custom_components.chj_saih` logger.
-*   Ensure the `chj-saih` library is installed correctly and is compatible.
-*   Verify your network connection if data is not updating.
-
-## Note on `chj-saih` Library
-
-This integration relies on the `chj-saih` Python library to interact with the CHJ SAIH services. The functionality and data availability are dependent on this library. The assumed version is `chj-saih==0.2.2`, but this may be updated in `manifest.json`. The specific API calls used are `APIClient().get_stations_by_radius(...)` and `APIClient().get_station_data(...)`. The exact behavior and data returned by these calls will determine the final sensor characteristics.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details (assuming an MIT license will be added).

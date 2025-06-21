@@ -1,5 +1,6 @@
 import re
 import sys
+import os
 import json # Added for JSON manipulation
 
 def bump_version(release_type):

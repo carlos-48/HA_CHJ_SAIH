@@ -1,48 +1,27 @@
 """Config flow for CHJ SAIH."""
-# Third-party
 import voluptuous as vol
-from chj_saih import APIClient
-from chj_saih.exceptions import SaihError
 
-# Home Assistant core
 from homeassistant import config_entries
-from homeassistant.const import CONF_SCAN_INTERVAL as HA_CONF_SCAN_INTERVAL # Alias for clarity
+from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import callback
-
-# Home Assistant helpers
+from homeassistant.helpers.aiohttp_client import async_get_clientsession # Added
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers import selector
+import aiohttp # Added
 
-# Local
+from chj_saih import fetch_all_stations # Added
+
 from .const import (
-    CONF_CONFIG_TYPE,
-    CONF_LOCATION,
-    CONF_RADIUS,
-    CONF_SCAN_INTERVAL, # String key for dict access
-    CONF_SENSOR_TYPES_INPUT,
-    CONF_STATION_ID_INPUT,
-    CONF_STATIONS,
+    CONF_STATIONS,  # Added
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     LOGGER,
-    SENSOR_TYPES_OPTIONS,
 )
-
-
-# Assuming APIClient and SaihError are structured like this in the library
-# If the library is part of the integration (e.g. in a `pychj_saih` subfolder),
-# the import path might be different, e.g. `from .pychj_saih import APIClient`.
-# For now, following the problem description:
-# (Imports moved to top)
 
 
 class ChjSaihConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for CHJ SAIH."""
 
     VERSION = 1
-    # init_data can be initialized here if it needs to persist across different instantiations
-    # of the flow, but typically it's better to manage it as an instance variable.
-    # For this use case, self.init_data will be initialized as needed.
 
     @staticmethod
     @callback
@@ -52,177 +31,61 @@ class ChjSaihConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
-        # Prevent multiple instances of the integration unless it's a reconfigure flow
-        if self._async_current_entries(include_ignore=False):
-             return self.async_abort(reason="single_instance_allowed")
-
-        errors = {}
+        errors = {}  # Added
+        # if self._async_current_entries(): # Removed
+        #     return self.async_abort(reason="single_instance_allowed") # Removed
 
         if user_input is not None:
-            # Ensure init_data is initialized for this flow instance
-            if not hasattr(self, 'init_data'):
-                self.init_data = {}
-            self.init_data.update(user_input) # Store user input
-            config_type = user_input[CONF_CONFIG_TYPE]
-            if config_type == "single":
-                return await self.async_step_single_station()
-            elif config_type == "radius":
-                return await self.async_step_radius_search()
-            # Not expecting other cases due to vol.In validation
+            try:
+                stations_str = user_input[CONF_STATIONS]
+                # Clean and split, removing empty strings from "id1,,id2"
+                station_ids_input = [s.strip() for s in stations_str.split(',') if s.strip()]
 
-        # Initial form or if there was an issue (though vol.In should prevent type errors)
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_CONFIG_TYPE): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            options=[
-                                selector.SelectOptionDict(value="single", label="Single Station"),
-                                selector.SelectOptionDict(value="radius", label="Stations by Radius"),
-                            ],
-                            translation_key="config_type", # Refers to "selector.config_type" in strings.json
-                            mode=selector.SelectSelectorMode.DROPDOWN,
-                        )
-                    )
-                }
-            ),
-            errors=errors,
-        )
+                if not station_ids_input:
+                    errors[CONF_STATIONS] = "empty_station_list"
+                else:
+                    session = async_get_clientsession(self.hass)
+                    all_stations_data = await fetch_all_stations(session=session)
 
-    async def async_step_single_station(self, user_input=None):
-        """Handle the single station configuration step."""
-        errors = {}
-        if user_input is not None:
-            # Ensure init_data is initialized (should be by async_step_user)
-            if not hasattr(self, 'init_data'):
-                self.init_data = {} # Should ideally not happen if flow starts from user step
-            self.init_data[CONF_STATION_ID_INPUT] = user_input[CONF_STATION_ID_INPUT]
-            # No validation for now, proceed to next step
-            return await self.async_step_configure_global()
+                    valid_station_ids_from_api = {
+                        station['variable'] for station in all_stations_data if 'variable' in station
+                    }
 
-        # Show form to get station ID
-        return self.async_show_form(
-            step_id="single_station",
-            data_schema=vol.Schema(
-                {vol.Required(CONF_STATION_ID_INPUT): str}
-            ),
-            errors=errors,
-            description_placeholders={"docs_url": "URL_TO_STATION_ID_DOCS_OR_INFO"}, # Example placeholder
-        )
+                    invalid_user_stations = [
+                        sid for sid in station_ids_input if sid not in valid_station_ids_from_api
+                    ]
 
-    async def async_step_radius_search(self, user_input=None):
-        """Handle the radius search configuration step."""
-        errors = {}
-        if user_input is not None:
-            # Ensure init_data is initialized (should be by async_step_user)
-            if not hasattr(self, 'init_data'):
-                self.init_data = {} # Should ideally not happen if flow starts from user step
+                    if invalid_user_stations:
+                        LOGGER.error(f"Invalid station IDs entered: {invalid_user_stations}")
+                        errors["base"] = "invalid_station_id"
+                        # For more specific feedback, you could add to errors[CONF_STATIONS]
+                        # errors[CONF_STATIONS] = f"The following station IDs are invalid: {', '.join(invalid_user_stations)}"
+                    else:
+                        # All stations are valid, store the cleaned list
+                        user_input[CONF_STATIONS] = station_ids_input
+                        LOGGER.info(f"Configuring CHJ SAIH with stations: {user_input[CONF_STATIONS]}")
+                        return self.async_create_entry(title="CHJ SAIH", data=user_input)
 
-            self.init_data[CONF_LOCATION] = user_input[CONF_LOCATION]
-            self.init_data[CONF_RADIUS] = user_input[CONF_RADIUS]
-            self.init_data[CONF_SENSOR_TYPES_INPUT] = user_input[CONF_SENSOR_TYPES_INPUT]
+            except aiohttp.ClientError as e:
+                LOGGER.error(f"Error connecting to CHJ SAIH service: {e}")
+                errors["base"] = "cannot_connect"
+            except Exception as e: # Catch any other unexpected errors during validation
+                LOGGER.exception(f"Unexpected error validating stations: {e}")
+                errors["base"] = "unknown_error"
 
-            return await self.async_step_configure_global()
-
-        # Show form to get radius search parameters
         data_schema = vol.Schema(
             {
                 vol.Required(
-                    CONF_LOCATION,
-                    default={ # Default to HA's configured home location
-                        "latitude": self.hass.config.latitude,
-                        "longitude": self.hass.config.longitude,
-                    }
-                ): selector.selector({"location": {}}), # Location selector
+                    CONF_STATIONS, default=""
+                ): str,
                 vol.Optional(
-                    CONF_RADIUS,
-                    default=50 # Default radius 50km
-                ): cv.positive_float,
-                vol.Required(CONF_SENSOR_TYPES_INPUT): cv.multi_select(
-                    SENSOR_TYPES_OPTIONS
-                ),
+                    CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL
+                ): cv.positive_int,
             }
         )
+
         return self.async_show_form(
-            step_id="radius_search", data_schema=data_schema, errors=errors
-        )
-
-    async def async_step_configure_global(self, user_input=None):
-        """Handle global configuration like scan interval and finalize entry creation."""
-        errors = {}
-        # Ensure init_data is initialized (it should be by previous steps)
-        if not hasattr(self, 'init_data'):
-            self.init_data = {}
-
-        if user_input is not None:
-            self.init_data[CONF_SCAN_INTERVAL] = user_input[CONF_SCAN_INTERVAL] # Uses key from .const
-            config_type = self.init_data.get(CONF_CONFIG_TYPE)
-
-            if config_type == "radius":
-                try:
-                    location_data = self.init_data[CONF_LOCATION]
-                    lat = location_data['latitude']
-                    lon = location_data['longitude']
-                    radius = self.init_data[CONF_RADIUS]
-                    sensor_types = self.init_data[CONF_SENSOR_TYPES_INPUT]
-
-                    client = APIClient()
-
-                    LOGGER.debug(
-                        "Fetching stations by radius: lat=%s, lon=%s, radius=%s, types=%s",
-                        lat, lon, radius, sensor_types
-                    )
-                    stations_data = await self.hass.async_add_executor_job(
-                        client.get_stations_by_radius, lat, lon, radius, sensor_types
-                    )
-
-                    if stations_data:
-                        station_ids = [s["id"] for s in stations_data if "id" in s]
-                        if station_ids:
-                            self.init_data[CONF_STATIONS] = station_ids
-                            LOGGER.info("Found stations by radius: %s", station_ids)
-                        else:
-                            LOGGER.warning("No station IDs found in data: %s", stations_data)
-                            errors["base"] = "no_stations_found_data"
-                    else:
-                        LOGGER.warning("No stations found for the given radius criteria.")
-                        errors["base"] = "no_stations_found"
-
-                except SaihError as e:
-                    LOGGER.error("API error during radius search: %s", e)
-                    errors["base"] = "radius_search_api_error"
-                except Exception as e:  # pylint: disable=broad-except
-                    LOGGER.exception("Unexpected error during radius search: %s", e)
-                    errors["base"] = "unknown_error_radius"
-
-            elif config_type == "single":
-                station_id = self.init_data.get(CONF_STATION_ID_INPUT)
-                if station_id:
-                    self.init_data[CONF_STATIONS] = [station_id]
-                else:
-                    errors["base"] = "missing_station_id"
-
-            else:
-                LOGGER.error("Unknown config type: %s", config_type)
-                errors["base"] = "unknown_config_type"
-
-            if not errors:
-                LOGGER.debug("Configuration data ready: %s", self.init_data)
-                return self.async_create_entry(title=DOMAIN, data=self.init_data)
-
-        # Show form for scan interval
-        return self.async_show_form(
-            step_id="configure_global",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(
-                        HA_CONF_SCAN_INTERVAL, # Use aliased HA const for schema
-                        default=self.init_data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL) # Default from dict or global default
-                    ): cv.positive_int,
-                }
-            ),
-            errors=errors,
+            step_id="user", data_schema=data_schema, errors=errors  # Modified
         )
 
 
@@ -248,9 +111,9 @@ class ChjSaihOptionsFlowHandler(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Optional(
-                        HA_CONF_SCAN_INTERVAL, # Use aliased HA const for schema
+                        CONF_SCAN_INTERVAL,
                         default=self.config_entry.options.get(
-                            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL # Default from dict or global default
+                            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                         ),
                     ): cv.positive_int,
                 }
