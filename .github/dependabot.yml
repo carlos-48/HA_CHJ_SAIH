@@ -6,6 +6,6 @@
 version: 2
 updates:
   - package-ecosystem: "pip" # See documentation for possible values
-    directory: "/custom_components/chj_saih/manifest.json" # Location of package manifests
+    directory: "/custom_components/chj_saih/" # Location of package manifests
     schedule:
       interval: "weekly"
